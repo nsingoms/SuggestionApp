@@ -1,0 +1,198 @@
+﻿@page "/SampleData"
+@inject ICategoryData categoryData
+@inject IStatusData statusData
+@inject IUserData userData
+@inject ISuggestionData suggestionData
+
+<h3>SampleData</h3>
+
+@if (categoriesCreated)
+{
+    <h2>Categories have been Created</h2>
+}
+else
+{
+    <button class="btn btn-primary" type="button" @onclick="@CreateCategories">Create Categories</button>
+}
+@if (statusesCreated)
+{
+    <h2>Statuses have been created </h2>
+}
+else
+{
+   <button class="btn btn-primary" type="button" @onclick="@CreateStatuses">Create Statuses</button> 
+}
+<button class="btn btn-danger" type="button" @onclick="@GenerateSampleData">Generate Sample Data</button> 
+
+
+@code {
+
+    private bool categoriesCreated = false;
+    private bool statusesCreated = false;
+
+    private async Task GenerateSampleData()
+    {
+        UserModel user = new()
+            {
+                FirstName = "Marvelous",
+                LastName = "Nsingo",
+                DisplayName = "Dee Kay",
+                EmailAddress = "nsingomarvelous@gmail.com",
+                ObjectIdentifier = "abc-123",
+            };
+        await userData.CreateUser(user);
+
+        var foundUser = await userData.GetUserFromAuthentication("abc-123");
+        var categories = await categoryData.GetAllCategories();
+        var statuses = await statusData.GetAllStatuses();
+
+        HashSet<string> votes = new();
+        votes.Add("1");
+        votes.Add("2");
+        votes.Add("3");
+        SuggestionModel suggestion = new SuggestionModel
+            {
+                Author = new BasicUserModel(foundUser),
+                Category = categories[0],
+                Suggestion = "Our First Suggestion",
+                Description = "This is a suggestion created by the Sample Data generation Method",
+                ApprovedForRelease=true
+
+            };
+            await suggestionData.CreateSuggestion(suggestion);
+
+            suggestion = new SuggestionModel
+            {
+                Author = new BasicUserModel(foundUser),
+                Category = categories[1],
+                Suggestion = "Our Second Suggestion",
+                Description = "This is a suggestion created by the Sample Data generation Method",
+                SuggestionStatus=statuses[0],
+                OwnerNotes="this is the note for this suggestion",
+                ApprovedForRelease=true
+            };
+            await suggestionData.CreateSuggestion(suggestion);
+            
+            suggestion = new SuggestionModel
+            {
+                Author = new BasicUserModel(foundUser),
+                Category = categories[2],
+                Suggestion = "Our Third Suggestion",
+                Description = "This is a suggestion created by the Sample Data generation Method",
+                SuggestionStatus=statuses[1],
+                OwnerNotes="this is the note for this suggestion",
+                ApprovedForRelease=true
+            };
+            await suggestionData.CreateSuggestion(suggestion);
+            
+            suggestion = new SuggestionModel
+            {
+                Author = new BasicUserModel(foundUser),
+                Category = categories[3],
+                Suggestion = "Our Fourth Suggestion",
+                Description = "This is a suggestion created by the Sample Data generation Method",
+                UserVotes=votes,
+                SuggestionStatus=statuses[2],
+                OwnerNotes="this is the note for this suggestion",
+                ApprovedForRelease=true
+            };
+            await suggestionData.CreateSuggestion(suggestion);
+            votes.Add("4");
+            suggestion = new SuggestionModel
+            {
+                Author = new BasicUserModel(foundUser),
+                Category = categories[4],
+                Suggestion = "Our Fifth Suggestion",
+                Description = "This is a suggestion created by the Sample Data generation Method",
+                UserVotes=votes,
+                SuggestionStatus=statuses[3],
+                OwnerNotes="this is the note for this suggestion",
+                ApprovedForRelease=true
+            };
+            await suggestionData.CreateSuggestion(suggestion);
+
+    }
+
+    private async Task CreateCategories()
+    {
+        var categories = await categoryData.GetAllCategories();
+
+
+        if(categories?.Count>0)
+        {
+            return;
+        }
+
+        CategoryModel cat = new CategoryModel
+            {
+                CategoryName = "Courses",
+                CategoryDescription = "Full paid courses"
+            };
+        await categoryData.CreateCategory(cat);
+
+        cat = new CategoryModel
+            {
+                CategoryName = "Dev Questions",
+                CategoryDescription = "Advice on being a developer"
+            };
+        await categoryData.CreateCategory(cat);
+
+        cat = new CategoryModel
+            {
+                CategoryName = "Graphic Design",
+                CategoryDescription = "A short description on the processes and software used for our graphic designs"
+            };
+        await categoryData.CreateCategory(cat);
+
+        cat = new CategoryModel
+            {
+                CategoryName = "Seo Introduction",
+                CategoryDescription = "A short video introducting SEO and how it impacts your website"
+            };
+        await categoryData.CreateCategory(cat);
+
+        cat = new CategoryModel
+            {
+                CategoryName = "How To",
+                CategoryDescription = "A crash course on most of the tools we use on development"
+            };
+        await categoryData.CreateCategory(cat);
+
+        categoriesCreated = true;
+    }
+    private async Task CreateStatuses()
+    {
+        var statuses = await statusData.GetAllStatuses();
+
+        if(statuses?.Count>0)
+        {
+            return;
+        }
+        StatusModel stat= new StatusModel
+        {
+             StatusName="Completed",
+             StatusDescription="This indicates that the suggestion has been processed and completed "
+        };
+        await statusData.CreateStatus(stat);
+        stat= new StatusModel
+        {
+             StatusName="Watching",
+             StatusDescription="This suggestion was  interesting ,we watching to see if it gains traction "
+        };
+        await statusData.CreateStatus(stat);
+        stat= new StatusModel
+        {
+             StatusName="Upcoming",
+             StatusDescription="This suggestion was approved and will appear soon "
+        };
+        await statusData.CreateStatus(stat);
+        stat= new StatusModel
+        {
+             StatusName="Dismissed",
+             StatusDescription="This suggestion falls outside the scope of our organisation there we wont be attending to it "
+        };
+        await statusData.CreateStatus(stat);
+        statusesCreated = true;
+    }
+
+}
