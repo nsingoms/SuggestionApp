@@ -24,6 +24,70 @@
                @oninput="((txt)=>OnSearchInput((string)txt.Value))" />
     </div>
 </div>
+<div>
+    <div>
+        @if(suggestions is not null)
+        {
+            <Virtualize Items="suggestions" Context="s" OverscanCount="10">
+                <div>
+                    <div>
+                        <div>@GetUpVoteTopText(s)</div>
+                        <span class="oi oi-caret-top"></span>
+                        <div>@GetUpVotebottomText(s)</div>
+                    </div>
+                    <div>
+                        <div @onclick="(()=>OpenDetails(s))">
+                            @s.Suggestion 
+                        </div>
+                       <div>
+                         <div @onclick="(()=>OpenDetails(s))">
+                            @s.Category?.CategoryName 
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div>
+                        @s.SuggestionStatus?.StatusName
+                    </div>
+                </div>
+                </div>
+            </Virtualize>
+        }
+    </div>
+    <div>
+        @if (categories is not null)
+        {
+            
+            <div>
+                <span>Category</span>
+                <div @onclick="(()=>OnCategoryOnClick())">All</div>
+                @foreach (var c in categories)
+                {
+                    <div @onclick="(()=>OnCategoryOnClick(c.CategoryName))">
+                        @c.CategoryName
+                    </div>
+                }
+               
+                
+            </div>
+           
+        }
+         @if (statuses is not null)
+        {
+            
+            <div>
+                <span>Category</span>
+                <div @onclick="(()=>OnStatusOnClick())">All</div>
+                @foreach (var s in statuses)
+                {
+                    <div @onclick="(()=>OnStatusOnClick(s.StatusName))">
+                        @s.StatusName
+                    </div>
+                }
+             </div>
+            }
+    </div>
+</div>
 @code{
 
     private List<SuggestionModel> suggestions;
