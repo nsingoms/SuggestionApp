@@ -15,4 +15,8 @@
     <ProjectReference Include="..\SuggestionAppLibrary\SuggestionAppLibrary.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\images\" />
+  </ItemGroup>
+
 </Project>

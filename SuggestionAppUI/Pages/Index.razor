@@ -3,50 +3,51 @@
 @inject ICategoryData categoryData
 @inject IStatusData statusData
 @inject ISuggestionData suggestionData
+@inject AuthenticationStateProvider authProvider
 @inject IUserData userData
 
 @inject NavigationManager navManager
 @inject ProtectedSessionStorage sessionStorage
 
-<h1>Training Suggestions</h1>
-<div>
-    <button>Suggest</button>
+<h1 class="page-heading text-uppercase mb-4">Training Suggestions</h1>
+<div class="suggestion-container">
+    <button @onclick="LoadCreatePage" class="suggest-btn btn btn-outline-light btn-lg text-uppercase">Suggest</button>
 </div>
-<div>
-    <div>@suggestions?.Count Suggestions</div>
-    <div>
-        <button @onclick="(()=>OrderByNew(true))">New </button>
-        <button @onclick="(()=>OrderByNew(false))">Popular</button>
+<div class="row">
+    <div class="suggestions-count col-md-4 text-light mt-2">@suggestions?.Count Suggestions</div>
+    <div class="col-md-4 col-xl-5 btn-group">
+        <button class="btn btn-order @SortedByNewClass(true)" @onclick="(()=>OrderByNew(true))">New </button>
+        <button class="btn btn-order @SortedByNewClass(false)" @onclick="(()=>OrderByNew(false))">Popular</button>
     </div>
-    <div>
+    <div class="col-md-4 col-xl-3 search-box">
         <input type="text" placeholder="Search" 
-               aria-label="Search Box"
+               aria-label="Search Box" class="form-control rounded-control"
                @oninput="((txt)=>OnSearchInput((string)txt.Value))" />
     </div>
 </div>
-<div>
-    <div>
+<div class="row">
+    <div class="col-md-8 col-xl-9">
         @if(suggestions is not null)
         {
             <Virtualize Items="suggestions" Context="s" OverscanCount="10">
-                <div>
-                    <div>
-                        <div>@GetUpVoteTopText(s)</div>
-                        <span class="oi oi-caret-top"></span>
-                        <div>@GetUpVotebottomText(s)</div>
+                <div class="suggestion-entry">
+                    <div class="@GetVoteClass(s)" @onclick="(()=>VoteUp(s))">
+                        <div class="text-uppercase">@GetUpVoteTopText(s)</div>
+                        <span class="oi oi-caret-top" style="font-size:3rem;"></span>
+                        <div class="text-uppercase">@GetUpVotebottomText(s)</div>
                     </div>
-                    <div>
-                        <div @onclick="(()=>OpenDetails(s))">
+                    <div class="suggestion-entry-text">
+                        <div class="suggestion-entry-text-title" @onclick="(()=>OpenDetails(s))">
                             @s.Suggestion 
                         </div>
                        <div>
-                         <div @onclick="(()=>OpenDetails(s))">
+                         <div class="suggestion-entry-text-category" @onclick="(()=>OpenDetails(s))">
                             @s.Category?.CategoryName 
                         </div>
                     </div>
                 </div>
-                <div>
-                    <div>
+                <div  class="suggestion-entry-status @GetSuggestionStatusClass(s)">
+                    <div class="suggestion-entry-status-text">
                         @s.SuggestionStatus?.StatusName
                     </div>
                 </div>
@@ -54,16 +55,16 @@
             </Virtualize>
         }
     </div>
-    <div>
+    <div class="col-md-4 col-xl-3">
         @if (categories is not null)
         {
             
-            <div>
-                <span>Category</span>
-                <div @onclick="(()=>OnCategoryOnClick())">All</div>
+            <div class="categories">
+                <span class="text-uppercase fw-bold">Category</span>
+                <div class="@GetSelectedCategory()" @onclick="(()=>OnCategoryOnClick())">All</div>
                 @foreach (var c in categories)
                 {
-                    <div @onclick="(()=>OnCategoryOnClick(c.CategoryName))">
+                    <div class="@GetSelectedCategory(c.CategoryName)" @onclick="(()=>OnCategoryOnClick(c.CategoryName))">
                         @c.CategoryName
                     </div>
                 }
@@ -75,12 +76,12 @@
          @if (statuses is not null)
         {
             
-            <div>
-                <span>Category</span>
-                <div @onclick="(()=>OnStatusOnClick())">All</div>
+            <div class="statuses">
+                <span class="text-uppercase fw-bold">Category</span>
+                <div class="@GetSelectedStatus()" @onclick="(()=>OnStatusOnClick())">All</div>
                 @foreach (var s in statuses)
                 {
-                    <div @onclick="(()=>OnStatusOnClick(s.StatusName))">
+                    <div class="@GetSelectedStatus(s.StatusName)" @onclick="(()=>OnStatusOnClick(s.StatusName))">
                         @s.StatusName
                     </div>
                 }
@@ -89,20 +90,21 @@
     </div>
 </div>
 @code{
-
+    private UserModel loggedInUser;
     private List<SuggestionModel> suggestions;
     private List<CategoryModel> categories;
     private List<StatusModel> statuses;
 
     private string selectedCategory = "All";
     private string selectedStatus = "All";
-    private string searchTerm = "";
+    private string searchText = "";
     private bool isSortedByNew = true;
 
     protected async override Task OnInitializedAsync()
     {
         categories = await categoryData.GetAllCategories();
         statuses = await statusData.GetAllStatuses();
+        await LoadAndVeryUser();
     }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -113,12 +115,66 @@
             StateHasChanged();
         }
     }
+    private async Task LoadAndVeryUser()
+    {
+        var authState = await authProvider.GetAuthenticationStateAsync();
+        string objectId = authState.User.Claims.FirstOrDefault(c => c.Type.Contains(""))?. Value;
+
+        if (string.IsNullOrWhiteSpace(objectId) == false)
+        {
+            loggedInUser = await userData.GetUserFromAuthentication(objectId) ?? new();
+
+            string firstName = authState.User.Claims.FirstOrDefault(c => c.Type.Contains("givenname"))?.Value;
+            string lastName = authState.User.Claims.FirstOrDefault(c => c.Type.Contains("surname"))?.Value;
+            string displayName = authState.User.Claims.FirstOrDefault(c => c.Type.Equals("name"))?.Value;
+            string email = authState.User.Claims.FirstOrDefault(c => c.Type.Contains("email"))?.Value;
+
+            bool isDirty = false;
+            if (objectId.Equals(loggedInUser.ObjectIdentifier) == false)
+            {
+                isDirty = true;
+                loggedInUser.ObjectIdentifier = objectId;
+            }
+
+            if (firstName.Equals(loggedInUser.FirstName) == false)
+            {
+                isDirty = true;
+                loggedInUser.FirstName = firstName;
+            }
+            if (lastName.Equals(loggedInUser.LastName) == false)
+            {
+                isDirty = true;
+                loggedInUser.LastName = lastName;
+            }
+            if (displayName.Equals(loggedInUser.DisplayName) == false)
+            {
+                isDirty = true;
+                loggedInUser.DisplayName = displayName;
+            }
+            if (email.Equals(loggedInUser.EmailAddress) == false)
+            {
+                isDirty = true;
+                loggedInUser.EmailAddress = email;
+            }
+            if (isDirty)
+            {
+                if (string.IsNullOrWhiteSpace(loggedInUser.Id) == false)
+                {
+                    await userData.CreateUser(loggedInUser);
+                }
+                else
+                {
+                    await userData.UpdateUser(loggedInUser);
+                }
+            }
+        }
+    }
 
     private async Task SaveFilterState()
     {
         await sessionStorage.SetAsync(nameof(selectedCategory), selectedCategory);
         await sessionStorage.SetAsync(nameof(selectedStatus), selectedStatus);
-        await sessionStorage.SetAsync(nameof(searchTerm), searchTerm);
+        await sessionStorage.SetAsync(nameof(searchText), searchText);
         await sessionStorage.SetAsync(nameof(isSortedByNew), isSortedByNew);
     }
     private async Task LoadFilterState()
@@ -129,8 +185,8 @@
         stringResults = await sessionStorage.GetAsync<string>(nameof(selectedStatus));
         selectedStatus = stringResults.Success ? stringResults.Value : "All"; 
 
-        stringResults = await sessionStorage.GetAsync<string>(nameof(searchTerm));
-        searchTerm   = stringResults.Success ? stringResults.Value : ""; 
+        stringResults = await sessionStorage.GetAsync<string>(nameof(searchText));
+        searchText   = stringResults.Success ? stringResults.Value : ""; 
 
         var boolResults = await sessionStorage.GetAsync<bool>(nameof(isSortedByNew));
         isSortedByNew = boolResults.Success ? boolResults.Value : true; 
@@ -148,10 +204,10 @@
         {
             output = output.Where(s => s.SuggestionStatus?.StatusName == selectedStatus).ToList();
         }
-        if(string.IsNullOrWhiteSpace(searchTerm)==false)
+        if(string.IsNullOrWhiteSpace(searchText)==false)
         {
-            output = output.Where(s => s.Suggestion.Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase)||
-                                  s.Description.Contains(searchTerm,StringComparison.InvariantCultureIgnoreCase)).ToList();
+            output = output.Where(s => s.Suggestion.Contains(searchText, StringComparison.InvariantCultureIgnoreCase)||
+                                  s.Description.Contains(searchText,StringComparison.InvariantCultureIgnoreCase)).ToList();
         }
 
         if(isSortedByNew)
@@ -171,9 +227,21 @@
         isSortedByNew = isNew;
         await FilterSuggestions();
     }
+    private void LoadCreatePage()
+    {
+        if (loggedInUser is not null)
+        {
+            navManager.NavigateTo("/create");
+        }
+        else
+        {
+            navManager.NavigateTo("/login");
+        }
+
+    }
     private async Task OnSearchInput(string searchInput)
     {
-        searchTerm = searchInput;
+        searchText = searchInput;
         await FilterSuggestions();
     }
 
@@ -188,6 +256,33 @@
         await FilterSuggestions();
     }
 
+    private async Task VoteUp(SuggestionModel suggestion)
+    {
+        if(loggedInUser is not null)
+        {
+            if (suggestion.Author.Id == loggedInUser.Id)
+            {
+                return;
+            }
+            if (suggestion.UserVotes.Add(loggedInUser.Id)==false)
+            {
+                suggestion.UserVotes.Remove(loggedInUser.Id);
+            }
+
+            await suggestionData.UpVoteSuggestion(suggestion.Id, loggedInUser.Id) ;  
+
+            if (isSortedByNew == false)
+            {
+                suggestions = suggestions.OrderByDescending(s => s.UserVotes.Count).ThenByDescending(s => s.DateCreated).ToList();
+            }
+
+        }
+        else{
+            navManager.NavigateTo("/MicrosoftIdentity/Account/SignIn", true);
+        }
+
+    }
+
     private string GetUpVoteTopText(SuggestionModel suggestion)
     {
         if(suggestion.UserVotes?.Count>0)
@@ -196,7 +291,14 @@
         }
         else
         {
-            return "Click To";
+            if (suggestion.Author.Id == loggedInUser?.Id)
+            {
+                return "Awaiting";
+            }
+            else
+            {
+                return "Click To";
+            }
         }
     }
     private string GetUpVotebottomText(SuggestionModel suggestion)
@@ -210,8 +312,81 @@
             return "upvote";
         }
     }
+    private string GetSuggestionStatusClass(SuggestionModel suggestion)
+    {
+        if (suggestion is null | suggestion.SuggestionStatus is null)
+        {
+            return "suggestion-entry-status-none";
+        }
+        string output=suggestion.SuggestionStatus.StatusName switch
+        {
+            "Completed"=>"suggestion-entry-status-completed",    
+            "Watching" =>"suggestion-entry-status-watching",
+            "Upcoming" =>"suggestion-entry-status-upcoming",
+            "Dismissed"=>"suggestion-entry-status-dismissed",
+               _  =>"suggestion-entry-status-none"
+
+        };
+        return output;
+
+       }
+       private string GetSelectedCategory(string category= "All")
+    {
+        if (category == selectedCategory)
+        {
+            return "selected-category";
+        }
+        else
+        {
+            return "";
+        }
+    }
+      private string GetSelectedStatus(string status= "All")
+    {
+        if (status == selectedStatus)
+        {
+            return "selected-status";
+        }
+        else
+        {
+            return "";
+        }
+    }
+           
+       
     private void OpenDetails(SuggestionModel suggestion)
     {
         navManager.NavigateTo($"/Details/{suggestion.Id}");
     }
+    private string SortedByNewClass(bool isNew)
+    {
+        if(isNew==isSortedByNew)
+        {
+            return "sort-selected";
+        }
+        else
+        {
+            return "";
+        }
+    }
+    private string GetVoteClass(SuggestionModel suggestion)
+    {
+        if (suggestion.UserVotes is null || suggestion.UserVotes.Count == 0)
+        {
+            return "suggestion-entry-no-votes";
+        }
+        else if(suggestion.UserVotes.Contains(loggedInUser?.Id))
+        {
+            return "suggestion-entry-voted";
+        }
+        else
+        {
+            return "suggestion-entry-not-voted";
+        }
+       
+    }
+    
+  
+    
+    
 }

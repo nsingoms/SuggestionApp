@@ -1,11 +1,13 @@
 ﻿@page "/create"
 @using SuggestionAppUI.Models
-@attribute [Authorize]
+
+
 @inject AuthenticationStateProvider authProvider
 @inject ICategoryData categoryData
 @inject ISuggestionData suggestionData
 @inject NavigationManager navManager
 @inject IUserData userData
+@attribute [Authorize]
 
 <h1>Make A Suggestion</h1>
 <div>
@@ -62,9 +64,7 @@
     {
         categories = await categoryData.GetAllCategories();
 
-        var authState = await authProvider.GetAuthenticationStateAsync();
-        string objectId = authState.User.Claims.FirstOrDefault(c => c.Type.Contains("objectidentifier"))?.Value;
-        loggedInUser = await userData.GetUserFromAuthentication(objectId);
+        loggedInUser = await authProvider.GetUserFromAuth(userData);
     }
     private void ClosePage()
     {
