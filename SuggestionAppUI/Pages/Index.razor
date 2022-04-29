@@ -33,7 +33,7 @@
                 <div class="suggestion-entry">
                     <div class="@GetVoteClass(s)" @onclick="(()=>VoteUp(s))">
                         <div class="text-uppercase">@GetUpVoteTopText(s)</div>
-                        <span class="oi oi-caret-top" style="font-size:3rem;"></span>
+                        <span class="oi oi-caret-top entry-upvote" ></span>
                         <div class="text-uppercase">@GetUpVotebottomText(s)</div>
                     </div>
                     <div class="suggestion-entry-text">
@@ -104,7 +104,7 @@
     {
         categories = await categoryData.GetAllCategories();
         statuses = await statusData.GetAllStatuses();
-        await LoadAndVeryUser();
+        await LoadAndVerifyUser();
     }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -115,10 +115,10 @@
             StateHasChanged();
         }
     }
-    private async Task LoadAndVeryUser()
+    private async Task LoadAndVerifyUser()
     {
         var authState = await authProvider.GetAuthenticationStateAsync();
-        string objectId = authState.User.Claims.FirstOrDefault(c => c.Type.Contains(""))?. Value;
+        string objectId = authState.User.Claims.FirstOrDefault(c => c.Type.Contains("objectidentifier"))?. Value;
 
         if (string.IsNullOrWhiteSpace(objectId) == false)
         {
@@ -158,7 +158,7 @@
             }
             if (isDirty)
             {
-                if (string.IsNullOrWhiteSpace(loggedInUser.Id) == false)
+                if (string.IsNullOrWhiteSpace(loggedInUser.Id))
                 {
                     await userData.CreateUser(loggedInUser);
                 }
@@ -235,7 +235,7 @@
         }
         else
         {
-            navManager.NavigateTo("/login");
+            navManager.NavigateTo("/MicrosoftIdentity/Account/SignIn",true);
         }
 
     }
