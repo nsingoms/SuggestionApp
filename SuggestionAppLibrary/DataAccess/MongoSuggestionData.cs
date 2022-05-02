@@ -91,7 +91,7 @@ namespace SuggestionAppLibrary.DataAccess
             {
                 var db = client.GetDatabase(_db.DbName);
                 var suggestionsInTransaction = db.GetCollection<SuggestionModel>(_db.SuggestionCollectionName);
-                var suggestion = (await suggestionsInTransaction.FindAsync(s => s.Id == suggestionId)).First();
+                var suggestion = (await suggestionsInTransaction.FindAsync(session, s => s.Id == suggestionId)).First();
 
                 bool isUpVote = suggestion.UserVotes.Add(userId);
                 
@@ -100,21 +100,21 @@ namespace SuggestionAppLibrary.DataAccess
                     suggestion.UserVotes.Remove(userId);
                 }
 
-                await suggestionsInTransaction.ReplaceOneAsync(session,s => s.Id == suggestionId, suggestion);
+                await suggestionsInTransaction.ReplaceOneAsync(session, s => s.Id == suggestionId, suggestion);
 
-                var usersinTransaction = db.GetCollection<UserModel>(_db.UserColletionName);
+                var usersinTransaction = db.GetCollection<UserModel>(_db.UserCollectionName);
                 var user = await _userData.GetUser(userId);
 
-                if (isUpVote)
+                if (isUpVote ==true)
                 {
                     user.VotedOnSuggestions.Add(new BasicSuggestionModel(suggestion));
                 }
                 else
                 {
-                    var suggestionToremove = user.VotedOnSuggestions.Where(s => s.Id == userId).First();
+                    var suggestionToremove = user.VotedOnSuggestions.Where(s => s.Id == suggestionId).First();
                     user.VotedOnSuggestions.Remove(suggestionToremove);
                 }
-                await usersinTransaction.ReplaceOneAsync(session,s => s.Id == userId, user);
+                await usersinTransaction.ReplaceOneAsync(s => s.Id == userId, user);
                 await session.CommitTransactionAsync();
                 _cache.Remove(CacheName);
 
@@ -139,7 +139,7 @@ namespace SuggestionAppLibrary.DataAccess
                 var suggestionsInTransaction = db.GetCollection<SuggestionModel>(_db.SuggestionCollectionName);
                 await suggestionsInTransaction.InsertOneAsync(session,suggestion);
 
-                var usersinTransaction = db.GetCollection<UserModel>(_db.UserColletionName);
+                var usersinTransaction = db.GetCollection<UserModel>(_db.UserCollectionName);
                 var user = await _userData.GetUser(suggestion.Author.Id);
                 user.AuthoredSuggestions.Add(new BasicSuggestionModel(suggestion));
 

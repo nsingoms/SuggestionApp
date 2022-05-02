@@ -13,6 +13,6 @@ namespace SuggestionAppLibrary.DataAccess
         IMongoCollection<SuggestionModel> SuggestionCollection { get; }
         string SuggestionCollectionName { get; }
         IMongoCollection<UserModel> UserCollection { get; }
-        string UserColletionName { get; }
+        string UserCollectionName { get; }
     }
 }

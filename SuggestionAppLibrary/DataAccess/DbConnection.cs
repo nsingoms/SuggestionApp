@@ -15,7 +15,7 @@ namespace SuggestionAppLibrary.DataAccess
 
         public string StatusCollectionName { get; private set; } = "statuses";
 
-        public string UserColletionName { get; private set; } = "users";
+        public string UserCollectionName { get; private set; } = "users";
         public MongoClient Client { get; private set; }
         public IMongoCollection<CategoryModel> CategoryCollection { get; private set; }
         public IMongoCollection<StatusModel> StatusCollection { get; private set; }
@@ -35,7 +35,7 @@ namespace SuggestionAppLibrary.DataAccess
             CategoryCollection = _db.GetCollection<CategoryModel>(CategoryCollectionName);
             StatusCollection = _db.GetCollection<StatusModel>(StatusCollectionName);
             SuggestionCollection = _db.GetCollection<SuggestionModel>(SuggestionCollectionName);
-            UserCollection = _db.GetCollection<UserModel>(UserColletionName);
+            UserCollection = _db.GetCollection<UserModel>(UserCollectionName);
         }
     }
 }
